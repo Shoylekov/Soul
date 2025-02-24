@@ -28,7 +28,7 @@ pygame.mixer.music.set_volume(0.2)
 pygame.mixer.music.play(-1)  # Loop
 
 # Load Map
-tmx_data = load_pygame("C:/Users/boril/Desktop/deeds_levels/exports/lvl_one.tmx")
+tmx_data = load_pygame("lvl_one.tmx")
 object_layer = tmx_data.get_layer_by_name('Objects')
 
 scale_x = WIDTH / (tmx_data.width * tmx_data.tilewidth)
