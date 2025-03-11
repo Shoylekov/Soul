@@ -7,8 +7,8 @@ class Boss:
         self.scale_factor = 2  # Increase size
         self.boss_name = boss_name
 
-        self.health = 1000  # Add health attribute
-        self.max_health = 1000  # Add max health attribute
+        self.health = 666  # Add health attribute
+        self.max_health = 666  # Add max health attribute
 
         self.frames = self.load_frames()  # FIXED: Removed incorrect argument (12)
         self.current_frame = 0
@@ -66,17 +66,25 @@ class Boss:
         return frames
 
     def draw_health_bar(self, screen, position, width=200, height=20):
-        """Draws the boss's health bar with the boss's name on top."""
+        """Draws the boss's health bar with the boss's name on top and health numbers on the right side."""
         health_ratio = self.health / self.max_health
         pygame.draw.rect(screen, (255, 0, 0), (position[0], position[1], width, height))  # Red background
         pygame.draw.rect(screen, (0, 255, 0), (position[0], position[1], width * health_ratio, height))  # Green foreground
         pygame.draw.rect(screen, (255, 255, 255), (position[0], position[1], width, height), 2)  # White border
 
-        # Draw the boss's name on top of the health bar
-        font = pygame.font.Font(None, 36)
-        text_surface = font.render(self.boss_name, True, (255, 255, 255))
-        text_rect = text_surface.get_rect(center=(position[0] + width // 2, position[1] - 20))
+        font = pygame.font.SysFont('impact', 34)
+        health_text = f"{int(self.health)}/{self.max_health}"
+        text_surface = font.render(health_text, True, (255, 255, 255))
+
+        # Move the health numbers to the right side
+        text_rect = text_surface.get_rect(midleft=(position[0] + width + 10, position[1] + height // 2))
         screen.blit(text_surface, text_rect)
+
+        # Draw the boss's name on top of the health bar
+        name_surface = font.render(self.boss_name, True, (255, 255, 255))
+        name_rect = name_surface.get_rect(center=(position[0] + width // 2, position[1] - 20))
+        screen.blit(name_surface, name_rect)
+
 
     def update(self):
         """Handles frame animation timing and updates position."""

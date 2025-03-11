@@ -12,7 +12,10 @@ class BossAttack:
         self.phase1_attacks = ['other_attack', 'path_spears', 'attack3']
         self.phase2_attacks = ['shadowfall_barrage', 'rotating_laser', 'shockwave_pulse']
         self.phase3_attacks = ['shadowfall_barrage', 'path_spears', 'other_attack']
-        self.phase4_attacks = ['attack3', 'rotating_laser', 'push_attack']
+        self.phase4_attacks = ['attack3', 'rotating_laser', 'wall_attack']
+        self.phase5_attacks = ['attack3', 'shockwave_pulse', 'wall_attack']
+        self.phase6_attacks = ['other_attack', 'shadowfall_barrage', 'rotating_laser']
+        self.phase7_attacks = ['wall_attack', 'shockwave_pulse', 'wall_attack']
         self.current_phase = 1
         self.attack_order = self.phase1_attacks
         self.current_attack_index = 0
@@ -40,7 +43,7 @@ class BossAttack:
         self.scythes = []                  # will store each scythe
         self.scythe_damage_cooldown = 300  # 0.3s between hits per scythe
         self.scythe_attack_start_time = 0  # time when attack starts
-        self.scythe_attack_duration = 3000 # how long the scythes stay on screen (ms)
+        self.scythe_attack_duration = 2600 # how long the scythes stay on screen (ms)
         # Load scythe images
         self.scythe_image = pygame.image.load("assets/sheets/scythe.png").convert_alpha()
         self.scythe_image_flipped = pygame.transform.flip(self.scythe_image, True, False)
@@ -55,9 +58,12 @@ class BossAttack:
         # ========== For Shockwave pulse attack ==========
         self.shockwave_active = False
 
-        # ========== For Push attack ==========
-        self.push_attack_active = False
-        self.push_force = 10
+        # ========== Wall attack ==========
+        self.current_wall_index = 0  # Track the current wall being moved
+        self.wall_attack_active = False
+        self.wall_move_duration = 1500  # Duration for each wall to move
+        self.gap_size = 50
+        self.walls = []
 
         self.all_attacks_completed = False  # Reset the flag
         
@@ -91,8 +97,8 @@ class BossAttack:
                 self.rotating_laser_attack(target)
             elif attack == 'shockwave_pulse':
                 self.shockwave_pulse_attack(target)
-            elif attack == 'push_attack':
-                self.push_attack(target)
+            elif attack == 'wall_attack':
+                self.wall_attack(target)
             self.current_attack_in_progress = True
         else:
             print(f"[DEBUG] All attacks completed. current_phase: {self.current_phase}, current_attack_index: {self.current_attack_index}")
@@ -111,6 +117,18 @@ class BossAttack:
         elif self.current_phase == 3:
             self.current_phase = 4
             self.attack_order = self.phase4_attacks
+            self.reset_attacks()
+        elif self.current_phase == 4:
+            self.current_phase = 5
+            self.attack_order = self.phase5_attacks
+            self.reset_attacks()
+        elif self.current_phase == 5:
+            self.current_phase = 6
+            self.attack_order = self.phase6_attacks
+            self.reset_attacks()
+        elif self.current_phase == 6:
+            self.current_phase = 7
+            self.attack_order = self.phase7_attacks
             self.reset_attacks()
         
     # ------------------------------------------------------------------
@@ -392,15 +410,32 @@ class BossAttack:
         self.shockwave_active = True
         print("Shockwave Pulse attack initiated.")
     
+    def wall_attack(self, target):
+        """
+        Initiates the Wall Attack:
+        1) Right wall moves leftward, leaving a small gap.
+        2) Left wall moves rightward, leaving a small gap.
+        3) Bottom wall moves upward, leaving a small gap.
+        4) Top wall moves downward, completing the cycle.
+        """
+        current_time = pygame.time.get_ticks()
+
+        self.walls = [
+            {'rect': pygame.Rect(self.arena_rect.right, self.arena_rect.top, 10, self.arena_rect.height), 
+            'direction': 'left', 'start_time': current_time, 'last_hit_time': 0},
+            {'rect': pygame.Rect(self.arena_rect.left - 10, self.arena_rect.top, 10, self.arena_rect.height), 
+            'direction': 'right', 'start_time': current_time + self.wall_move_duration, 'last_hit_time': 0},
+            {'rect': pygame.Rect(self.arena_rect.left, self.arena_rect.bottom, self.arena_rect.width, 10), 
+            'direction': 'up', 'start_time': current_time + 2 * self.wall_move_duration, 'last_hit_time': 0},
+            {'rect': pygame.Rect(self.arena_rect.left, self.arena_rect.top - 10, self.arena_rect.width, 10), 
+            'direction': 'down', 'start_time': current_time + 3 * self.wall_move_duration, 'last_hit_time': 0}
+        ]
+
+        self.current_wall_index = 0  # Reset the current wall index
+        self.wall_attack_active = True
+        print("Wall attack initiated.")
+        
     
-    def push_attack(self, target):
-        """
-        Pushes the player to a random side of the arena.
-        """
-        directions = ['left', 'right', 'top', 'bottom']
-        self.push_direction = random.choice(directions)
-        self.push_attack_active = True
-        print(f"Push attack initiated. Direction: {self.push_direction}")
     # ------------------------------------------------------------------
     #                          MAIN UPDATE
     # ------------------------------------------------------------------
@@ -441,6 +476,7 @@ class BossAttack:
                     # Check multiple points on the player's collision rect
                     thickness = beam['thickness']
                     half_thickness = thickness / 2
+                    tolerance = 5  # Add a tolerance value for collision
                     # For robust collision, check the rect corners + center
                     points_to_check = [
                         target.soul_collision_rect.center,
@@ -455,8 +491,8 @@ class BossAttack:
 
                     for point in points_to_check:
                         dist = self.point_to_segment_distance(point[0], point[1], x1, y1, x2, y2)
-                        if dist < half_thickness:
-                            # If within beam thickness, deal damage
+                        if dist < half_thickness + tolerance:
+                            # If within beam thickness + tolerance, deal damage
                             if current_time - beam['last_hit_time'] >= self.blaster_damage_cooldown:
                                 print("Player hit by X blaster beam!")
                                 self.damage_sound.play()
@@ -588,24 +624,25 @@ class BossAttack:
             end_x = center[0] + laser['beam_length'] * math.cos(angle_rad)
             end_y = center[1] + laser['beam_length'] * math.sin(angle_rad)
             
-            # Check for collision with the player
-            points_to_check = [
-                target.soul_collision_rect.center,
-                target.soul_collision_rect.topleft,
-                target.soul_collision_rect.topright,
-                target.soul_collision_rect.bottomleft,
-                target.soul_collision_rect.bottomright,
-            ]
-            
-            for point in points_to_check:
-                dist = self.point_to_segment_distance(point[0], point[1], center[0], center[1], end_x, end_y)
-                if dist < laser['thickness'] / 2:
-                    if current_time - laser.get('last_hit_time', 0) >= self.scythe_damage_cooldown:
-                        print("Player hit by rotating laser!")
-                        self.damage_sound.play()
-                        player_health -= 7
-                        laser['last_hit_time'] = current_time
-                    break
+            # Check for collision with the player only if past telegraph phase
+            if current_time >= laser['telegraph_end_time']:
+                points_to_check = [
+                    target.soul_collision_rect.center,
+                    target.soul_collision_rect.topleft,
+                    target.soul_collision_rect.topright,
+                    target.soul_collision_rect.bottomleft,
+                    target.soul_collision_rect.bottomright,
+                ]
+                
+                for point in points_to_check:
+                    dist = self.point_to_segment_distance(point[0], point[1], center[0], center[1], end_x, end_y)
+                    if dist < laser['thickness'] / 2:
+                        if current_time - laser.get('last_hit_time', 0) >= self.scythe_damage_cooldown:
+                            print("Player hit by rotating laser!")
+                            self.damage_sound.play()
+                            player_health -= 7
+                            laser['last_hit_time'] = current_time
+                        break
 
             # End the attack when the active phase expires.
             if current_time >= laser['active_end_time']:
@@ -646,38 +683,59 @@ class BossAttack:
                     self.current_attack_in_progress = False
                     self.current_attack_index += 1
                     print("Shockwave Pulse attack finished.")
+        
+        elif current_attack == 'wall_attack' and self.wall_attack_active:
+            current_time = pygame.time.get_ticks()
+            wall_move_duration = self.wall_move_duration
+            gap_size = self.gap_size
+            move_speed = 4  # Adjust speed based on game frame rate
 
-        if current_attack == 'push_attack' and self.push_attack_active:
-            if self.push_direction == 'left':
-                target.soul_pos[0] -= self.push_force
-                if target.soul_pos[0] <= self.arena_rect.left:
-                    target.soul_pos[0] = self.arena_rect.left
-                    self.push_attack_active = False
-                    self.current_attack_in_progress = False
-                    self.current_attack_index += 1
-            elif self.push_direction == 'right':
-                target.soul_pos[0] += self.push_force
-                if target.soul_pos[0] >= self.arena_rect.right:
-                    target.soul_pos[0] = self.arena_rect.right
-                    self.push_attack_active = False
-                    self.current_attack_in_progress = False
-                    self.current_attack_index += 1
-            elif self.push_direction == 'top':
-                target.soul_pos[1] -= self.push_force
-                if target.soul_pos[1] <= self.arena_rect.top:
-                    target.soul_pos[1] = self.arena_rect.top
-                    self.push_attack_active = False
-                    self.current_attack_in_progress = False
-                    self.current_attack_index += 1
-            elif self.push_direction == 'bottom':
-                target.soul_pos[1] += self.push_force
-                if target.soul_pos[1] >= self.arena_rect.bottom:
-                    target.soul_pos[1] = self.arena_rect.bottom
-                    self.push_attack_active = False
-                    self.current_attack_in_progress = False
-                    self.current_attack_index += 1
+            if self.current_wall_index < len(self.walls):
+                wall = self.walls[self.current_wall_index]
+                elapsed_time = current_time - wall['start_time']
 
-        # Check if all attacks are completed
+                if elapsed_time < self.wall_move_duration:
+                    if wall['direction'] == 'left':
+                        wall['rect'].x -= move_speed
+                        if wall['rect'].x <= self.arena_rect.centerx - gap_size:
+                            wall['rect'].x = self.arena_rect.centerx - gap_size
+                    elif wall['direction'] == 'right':
+                        wall['rect'].x += move_speed
+                        if wall['rect'].x >= self.arena_rect.centerx + gap_size:
+                            wall['rect'].x = self.arena_rect.centerx + gap_size
+                    elif wall['direction'] == 'up':
+                        wall['rect'].y -= move_speed
+                        if wall['rect'].y <= self.arena_rect.centery - gap_size:
+                            wall['rect'].y = self.arena_rect.centery - gap_size
+                    elif wall['direction'] == 'down':
+                        wall['rect'].y += move_speed
+                        if wall['rect'].y >= self.arena_rect.centery + gap_size:
+                            wall['rect'].y = self.arena_rect.centery + gap_size
+
+                    # Check collision with the player
+                    if wall['rect'].colliderect(target.soul_collision_rect):
+                        if current_time - wall['last_hit_time'] >= self.spear_damage_cooldown:
+                            print("Player hit by moving wall!")
+                            self.damage_sound.play()
+                            player_health -= 10  # Adjust damage as needed
+                            wall['last_hit_time'] = current_time
+
+                else:
+                    # Move to the next wall
+                    self.walls.pop(self.current_wall_index)
+                    if self.current_wall_index < len(self.walls):
+                        self.walls[self.current_wall_index]['start_time'] = current_time
+
+            else:
+                # All walls have moved, reset and proceed to the next attack
+                print("Wall attack finished.")
+                self.walls = []
+                self.wall_attack_active = False
+                self.current_attack_in_progress = False
+                self.current_attack_index += 1
+
+        
+            # Check if all attacks are completed
         if self.current_attack_index >= len(self.attack_order):
             self.all_attacks_completed = True
             print(f"[DEBUG] All attacks completed. current_phase: {self.current_phase}, current_attack_index: {self.current_attack_index}")
@@ -802,3 +860,9 @@ class BossAttack:
                 color = (255, 255, 255)  # White for active
                 radius = int(shockwave['current_radius'])
                 pygame.draw.circle(screen, color, shockwave['center'], radius, 2)
+
+        elif current_attack == 'wall_attack' and self.wall_attack_active:
+            for wall in self.walls:
+                pygame.draw.rect(screen, (255, 255, 255), wall['rect'])  # Draw walls in red
+
+        

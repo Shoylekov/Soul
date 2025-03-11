@@ -10,6 +10,7 @@ class Soul:
         # Offset for drawing only; e.g., (0, -40) moves the sprite up by 40 pixels.
         self.sprite_offset = (0, -10)
         self.soul_collision_rect = self.get_collision_rect()
+        self.is_being_pushed = False  # Flag to indicate if the player is being pushed
 
     def get_collision_rect(self):
         soul_frame = self.soul_frames[self.current_frame]
@@ -35,15 +36,16 @@ class Soul:
         pygame.draw.rect(screen, (0, 255, 0), self.soul_collision_rect, 2)
 
     def move(self, keys):
-        if keys[pygame.K_LEFT]:
-            self.soul_pos[0] -= 5
-        if keys[pygame.K_RIGHT]:
-            self.soul_pos[0] += 5
-        if keys[pygame.K_UP]:
-            self.soul_pos[1] -= 5
-        if keys[pygame.K_DOWN]:
-            self.soul_pos[1] += 5
-        self.clamp_position()
+        if not self.is_being_pushed:  # Prevent movement if being pushed
+            if keys[pygame.K_LEFT]:
+                self.soul_pos[0] -= 5
+            if keys[pygame.K_RIGHT]:
+                self.soul_pos[0] += 5
+            if keys[pygame.K_UP]:
+                self.soul_pos[1] -= 5
+            if keys[pygame.K_DOWN]:
+                self.soul_pos[1] += 5
+            self.clamp_position()
 
     def reset_position(self):
         self.soul_pos = [self.arena_rect.centerx, self.arena_rect.centery]

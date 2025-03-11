@@ -27,8 +27,42 @@ class FightBar:
                 self.indicator_speed = -self.indicator_speed
 
     def draw(self, screen):
-        # Draw the fight bar
-        pygame.draw.rect(screen, (255, 255, 255), self.rect, 2)
-        # Draw the indicator
-        indicator_rect = pygame.Rect(self.indicator_pos - 5, self.rect.top - 10, 10, self.rect.height + 20)
-        pygame.draw.rect(screen, (255, 0, 0), indicator_rect)
+        shadow_offset = 4
+        shadow_surf = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
+        pygame.draw.rect(shadow_surf, (0, 0, 0, 120), shadow_surf.get_rect(), border_radius=10)
+        screen.blit(shadow_surf, (self.rect.x + shadow_offset, self.rect.y + shadow_offset))
+
+        # ---------------------------
+        gradient_surf = pygame.Surface((self.rect.width, self.rect.height))
+        screen.blit(gradient_surf, self.rect.topleft)
+        
+        # ---------------------------
+        pygame.draw.rect(screen, (255, 255, 255), self.rect, 3, border_radius=10)
+        
+        # ---------------------------
+        center_x = self.rect.centerx
+        # Center line (green)
+        pygame.draw.line(screen, (0, 255, 0), (center_x, self.rect.top), (center_x, self.rect.bottom), 3)
+        # Optimal hit zone (yellow lines)
+        area_width = 20
+        pygame.draw.line(screen, (255, 255, 0), (center_x - area_width, self.rect.top), (center_x - area_width, self.rect.bottom), 2)
+        pygame.draw.line(screen, (255, 255, 0), (center_x + area_width, self.rect.top), (center_x + area_width, self.rect.bottom), 2)
+        
+        # ---------------------------
+        indicator_width = 10
+        indicator_height = self.rect.height + 20
+        indicator_rect = pygame.Rect(self.indicator_pos - indicator_width // 2, self.rect.top - 10, indicator_width, indicator_height)
+        
+        # Indicator drop shadow
+        indicator_shadow_surf = pygame.Surface((indicator_rect.width, indicator_rect.height), pygame.SRCALPHA)
+        pygame.draw.rect(indicator_shadow_surf, (0, 0, 0, 120), indicator_shadow_surf.get_rect(), border_radius=5)
+        screen.blit(indicator_shadow_surf, (indicator_rect.x + 3, indicator_rect.y + 3))
+        
+        # Indicator glow effect
+        glow_rect = indicator_rect.inflate(10, 10)
+        glow_surf = pygame.Surface((glow_rect.width, glow_rect.height), pygame.SRCALPHA)
+        pygame.draw.rect(glow_surf, (255, 100, 100, 120), glow_surf.get_rect(), border_radius=5)
+        screen.blit(glow_surf, glow_rect.topleft)
+        
+        # Main indicator
+        pygame.draw.rect(screen, (255, 0, 0), indicator_rect, border_radius=5)

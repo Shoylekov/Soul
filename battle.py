@@ -229,8 +229,13 @@ class Battle:
             self.boss.health -= damage
             if self.boss.health < 0:
                 self.boss.health = 0
-            self.state = "fight_arena"
-            self.action_selected = True
+                self.state = "boss_defeat"
+                self.defeat_animation_timer = pygame.time.get_ticks()  # Start the defeat animation timer
+                self.defeat_animation_frame = 0  # Start the defeat animation at frame 0
+                print(f"[DEBUG] Boss defeated, state set to boss_defeat")
+            else:
+                self.state = "fight_arena"
+                self.action_selected = True
               # Reset the flag after processing the fight
 
     def handle_player_action(self, action):
@@ -326,16 +331,32 @@ class Battle:
                 damage = self.fight_bar.stop()
                 print(f"Player deals {damage} damage!")
                 self.boss.health -= damage
-                if self.boss.health < 0:
+                if self.boss.health <= 0:
                     self.boss.health = 0
-                self.state = "fight_arena"
-                self.action_selected = False  # Reset the flag after processing the fight
+                    self.state = "boss_defeat"
+                    self.defeat_animation_timer = pygame.time.get_ticks()  # Start the defeat animation timer
+                    self.defeat_animation_frame = 0  # Start the defeat animation at frame 0
+                    print(f"[DEBUG] Boss defeated, state set to boss_defeat")
+                else:
+                    self.state = "fight_arena"
+                    self.action_selected = False  # Reset the flag after processing the fight
         elif self.state == "choose_action":
             if self.phase_completed:
                 self.boss_attack.proceed_to_next_phase()
                 self.phase_completed = False
                 self.state = "fight_arena"
                 print(f"[DEBUG] Phase completed, proceeding to next phase, action_selected reset to False")
+        elif self.state == "boss_defeat":
+            elapsed_time = pygame.time.get_ticks() - self.defeat_animation_timer
+            if elapsed_time > 100:  # Change frame every 100ms
+                self.dialog_music.stop()
+                if not pygame.mixer.get_busy():
+                    self.slash_sound.play()
+                self.defeat_animation_frame += 1
+                self.defeat_animation_timer = pygame.time.get_ticks()
+            if self.defeat_animation_frame >= len(self.kill_frames):
+                self.state = "victory"  # Transition to game over or victory screen
+                print(f"[DEBUG] Boss defeat animation completed, state set to game_over")
         if not self.player.is_alive():
             if self.state != "game_over":
                 self.state = "game_over"
@@ -388,6 +409,13 @@ class Battle:
 
             boss_health_bar_position = (window_width // 2 - 100, window_height - 150)
             self.boss.draw_health_bar(self.screen, position=boss_health_bar_position)
+        elif self.state == "boss_defeat":
+            # Draw the boss defeat animation
+            if self.defeat_animation_frame < len(self.kill_frames):
+                defeat_frame = self.kill_frames[self.defeat_animation_frame]
+                defeat_x = (window_width - defeat_frame.get_width()) // 2
+                defeat_y = (window_height - defeat_frame.get_height()) // 2
+                self.screen.blit(defeat_frame, (defeat_x, defeat_y))
         elif self.state == "game_over":
             self.game_over_screen.draw()
         pygame.display.flip()

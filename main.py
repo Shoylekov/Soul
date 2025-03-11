@@ -23,9 +23,12 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Soul!")
 
 # Load and play background music
-pygame.mixer.music.load("assets/music/rise_of_a_hero.wav")  # Replace with the path to your music file
-pygame.mixer.music.set_volume(0.2)
-pygame.mixer.music.play(-1)  # Loop
+def play_chill_music():
+    pygame.mixer.music.load("assets/music/rise_of_a_hero.wav") 
+    pygame.mixer.music.set_volume(0.2)
+    pygame.mixer.music.play(-1)  # Loop
+
+play_chill_music()
 
 # Load Map
 tmx_data = load_pygame("C:/Users/boril/Desktop/deeds_levels/exports/lvl_one.tmx")
@@ -33,10 +36,11 @@ object_layer = tmx_data.get_layer_by_name('Objects')
 
 scale_x = WIDTH / (tmx_data.width * tmx_data.tilewidth)
 scale_y = HEIGHT / (tmx_data.height * tmx_data.tileheight)
-
-player = Player()
-boss = Boss()
-zazo = Zazo()
+game_state = "playing"
+if game_state == 'playing':
+    player = Player()
+    boss = Boss()
+    zazo = Zazo()
 
 obstacles = []
 for layer in tmx_data.visible_layers:
@@ -67,9 +71,9 @@ for layer in tmx_data.visible_layers:
 
 running = True
 clock = pygame.time.Clock()
-game_state = "playing"
 conversation = None
 battle = None
+boss_defeated = False
 
 while running:
     screen.fill(WHITE)
@@ -117,14 +121,15 @@ while running:
         elif game_state == "battle":
             battle.process_event(event)
 
-    if game_state == "playing":
+    if game_state in ["playing", "second_part"]:
         keys = pygame.key.get_pressed()
         player.update(keys, obstacles)
-        boss.update()
+        if game_state == "playing" and not boss_defeated:
+            boss.update()
         zazo.update()
         
         if not player.in_conversation and player.conversation_cooldown == 0:
-            if player.collision_rect.colliderect(boss.rect):
+            if player.collision_rect.colliderect(boss.rect) and game_state == "playing" and not boss_defeated:
                 game_state = "conversation"
                 player.in_conversation = True  # Set the flag
                 dialogue_text = boss.dialogue
@@ -137,13 +142,22 @@ while running:
                 dialogue_text = zazo.dialogue
                 options = ["Accept", "Go Back"]  # Custom options for Zazo
                 conversation = DialogBox(0, HEIGHT - 250, WIDTH, 250, dialogue_text, boss_name="Zazo", options=options)
-                conversation.text_sound.play() 
 
     elif game_state == "battle":
         battle.update(event)
+        if battle.state == "victory":
+            game_state = "second_part"  # Transition back to the main game loop
+            player.in_conversation = False  # Reset the flag
+            player.conversation_cooldown = 600  # Add cooldown
+            battle = None  # Clear the battle instance
+            boss_defeated = True  # Set the boss defeated flag
+            screen = pygame.display.set_mode((WIDTH, HEIGHT))
+            pygame.mixer.music.stop()
+            play_chill_music()
 
-    if game_state in ["playing", "conversation"]:
-        boss.draw(screen)
+    if game_state in ["playing", "second_part", "conversation"]:
+        if game_state != "second_part" and not boss_defeated:
+            boss.draw(screen)
         zazo.draw(screen)
         player.draw(screen)
 
