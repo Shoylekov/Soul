@@ -36,8 +36,8 @@ if choice == 'start_game':
     play_chill_music()
 
     # Load Maps
-    tmx_data_one = load_pygame("C:/Users/boril/Desktop/deeds_levels/exports/lvl_one.tmx")
-    tmx_data_two = load_pygame("C:/Users/boril/Desktop/deeds_levels/exports/lvl_two.tmx")
+    tmx_data_one = load_pygame(??)
+    tmx_data_two = load_pygame(??)
 
     # Initial Map
     tmx_data = tmx_data_one
