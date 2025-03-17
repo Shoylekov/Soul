@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/db2dedc3-571f-452b-91dd-eba9429e2eff)# 🎮 Soul
+# 🎮 Soul
 
 **Soul** is an indie game currently in development, drawing inspiration from the legendary *Undertale*.
 
