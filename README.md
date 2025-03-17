@@ -16,5 +16,7 @@
 
 ## News:
 -First Boss(Path) COMPLETED! 11/03/2025
+-Second map added! 17/03/2025
+-Main menu added! 16/03/2025
 
 ![Screenshot 2025-02-24 131320](https://github.com/user-attachments/assets/85f976a5-dc1f-4eaa-96ce-39fee6419f81)
