@@ -1,7 +1,7 @@
 import pygame
 
 class DialogBox:
-    def __init__(self, x, y, w, h, text, boss_name="Path", options=None, font_size=50, 
+    def __init__(self, x, y, w, h, text, boss_name, options=None, font_size=50, 
                  text_color="white", bg_color="black", border_color="white"):
         # If text is provided as a list, join the lines with newlines.
         if isinstance(text, list):

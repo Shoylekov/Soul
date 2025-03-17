@@ -23,9 +23,10 @@ os.environ['SDL_VIDEO_CENTERED'] = '1'
 pygame.init()
 
 class Battle:
-    def __init__(self, player, enemy):
+    def __init__(self, player, enemy, player_choice_for_path = None):
         self.player = player
         self.enemy = enemy
+        self.player_choice_for_path = player_choice_for_path
 
         # Arena config
         side_length = min(window_width - 120, window_height - 400)
@@ -36,27 +37,42 @@ class Battle:
         self.boss_attack = BossAttack(self.boss, self.arena_rect)
         # Create the battle window
         self.screen = pygame.display.set_mode((window_width, window_height), pygame.NOFRAME)
-        pygame.display.set_caption("Battle")
         
         self.boss_attack_timer = pygame.time.get_ticks()
-        self.boss_attack_interval = 3000  # Boss attacks every 3 seconds
         self.boss_projectiles = []  # List to store boss projectiles
 
         # Initial state: boss dialogue before the arena
         self.state = "boss_dialog"
+        
+        # Set the dialog based on the player's choice
+        if self.player_choice_for_path == "Fight":
+            dialog_text = [
+                "So that is your nature!",
+                "To fight and kill!",
+                "To seek the easier way!",
+                "...",
+                "The path you've chosen...",
+                "Ha-Ha-Ha!",
+                "Will lead to your end!",
+            ]
+        elif self.player_choice_for_path == "Go Back":
+            dialog_text = [
+                "It doesn't matter.",
+                "Since you already saw me...",
+                "I guess you can't go back anymore.",
+                "...",
+                "I'm Sorry!",
+                "May your soul rest in peace!",
+            ]
+        else:
+            dialog_text = ["..."]  # Default dialog if no choice is made
+
         self.boss_dialog = DialogBox(
             x=50,
             y=window_height - 170,
             w=window_width - 100,
             h=170,
-            text= ["So that is your nature!",
-                   "To fight and kill!",
-                   "To seek the easier way!",
-                   "...",
-                   "The path you've chosen...",
-                   "Ha-Ha-Ha!",
-                   "Will lead to your end!",
-                   ],
+            text=dialog_text,
             boss_name="Path",       # You can adjust the boss name as needed
             options=["Continue"],   # Single option to proceed
             font_size=50

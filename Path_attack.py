@@ -230,7 +230,6 @@ class BossAttack:
         # 2. How many scythes to spawn, how fast they move
         scythe_count = 3
         scythe_speed = 6  # fast movement
-        # You can adjust the radius so they spawn off-screen or just at the arena edge
         radius = max(self.arena_rect.width, self.arena_rect.height) // 2 + 100
 
         # 3. Spawn scythes at random angles around the center

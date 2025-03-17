@@ -11,7 +11,8 @@ class ActionMenu:
         self.border_color = pygame.Color(border_color)
         self.total_heals = total_heals  # Total available heals
         self.heals_used = 0  # Heals used initially set to 0
-    
+        self.buttons = []  # List to store button rectangles
+
     def process_event(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
@@ -31,8 +32,10 @@ class ActionMenu:
         pygame.draw.rect(screen, self.border_color, self.rect, 4)
         # Evenly space the menu options
         button_width = self.rect.width // len(self.options)
+        self.buttons = []  # Clear the buttons list before drawing
         for i, option in enumerate(self.options):
             btn_rect = pygame.Rect(self.rect.x + i * button_width, self.rect.y, button_width, self.rect.height)
+            self.buttons.append(btn_rect)  # Store the button rectangle
             if i == self.selected_index:
                 pygame.draw.rect(screen, (100, 100, 100), btn_rect)  # Highlight selected option
             else:
@@ -51,3 +54,10 @@ class ActionMenu:
                 heals_surf = self.font.render(heals_text, True, self.text_color)
                 heals_rect = heals_surf.get_rect(midleft=(text_rect.right + 10, text_rect.centery))
                 screen.blit(heals_surf, heals_rect)
+
+    def get_button_rect(self, action):
+        # Find the button rect for the given action
+        for i, option in enumerate(self.options):
+            if option == action:
+                return self.buttons[i]
+        return None
